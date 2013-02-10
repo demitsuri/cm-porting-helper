@@ -1,5 +1,6 @@
 package com.litecoding.cmportinghelper;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -36,6 +37,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
+	public static final String TAG = "cm-porting-helper";
+	
 	private static final String KEY_ROOT = "com.litecoding.cmporthelper.MainActivity.";
 	private static final String BTN_ACTION_TEXT_ID = KEY_ROOT + "btnAction.textId";
 	private static final String BTN_ACTION_SCAN_MODE = KEY_ROOT + "btnAction.scanMode";
@@ -254,25 +257,20 @@ public class MainActivity extends Activity {
     			InfoEntry currInfo = new InfoEntry();
     			currInfo.mPath = currPath;
     			
-    			StringBuilder builder = new StringBuilder(65536);
     			try {
     				file = new File(currPath);
     				BufferedReader br = new BufferedReader(new FileReader(file));
     				currInfo.mInfo = "";
         			String line;
         			while ((line = br.readLine()) != null) {
-        			   // process the line.
-        				builder.append(line);
-        				builder.append("\n");
-        				
         				currInfo.mInfo = currInfo.mInfo.concat(line).concat("\n");
         			}
         			br.close();
     			} catch(Exception e) {
     				currInfo.mException = e;
-    				Log.e("InfoCollectionTask", "Oops", e);
+    				Log.e(MainActivity.TAG, "Oops", e);
     			}
-    			Log.d("InfoCollectionTask", builder.toString());
+
     			mProcessedPaths.add(currPath);
     			mInfoEntries.add(currInfo);
     			publishProgress((int)(((float)progress / (float)total) * 100));
@@ -341,7 +339,7 @@ public class MainActivity extends Activity {
 		protected String doInBackground(List<InfoEntry>... params) {
 			File file = null;
 			try {
-				file = File.createTempFile("cmph-", ".zip");
+				file = File.createTempFile("cmph", ".zip");
 				FileOutputStream fos = new FileOutputStream(file);
 				ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(fos));
 				byte[] buff = new byte[1024];
@@ -349,17 +347,22 @@ public class MainActivity extends Activity {
 					for(InfoEntry entry : params[0]) {
 						if(entry.mException != null)
 							continue;
-						String filename = entry.mPath;
+						String filename = entry.mPath.startsWith(File.separator) ? 
+								entry.mPath.substring(1) : entry.mPath;
 				        
 				        ZipEntry zentry = new ZipEntry(filename);
 				        zos.putNextEntry(zentry);
 				         
-				        FileInputStream fis = new FileInputStream(filename);
+				        BufferedInputStream bis = 
+				        		new BufferedInputStream(new FileInputStream(entry.mPath));
 				        int readBytes = 0;
-				        while(fis.available() > 0) {
-				        	readBytes = fis.read(buff);
+				        while(true) {
+				        	readBytes = bis.read(buff);
+				        	if(readBytes == -1)
+				        		break;
 				        	zos.write(buff, 0, readBytes);
 				        }
+				        bis.close();
 				        zos.closeEntry();
 				     }
 				 } catch(Exception e) {
@@ -369,6 +372,7 @@ public class MainActivity extends Activity {
 				 }
 			} catch(Exception e) {
 				Crittercism.logHandledException(e);
+				Log.e(MainActivity.TAG, "Oops on zip", e);
 				file = null;
 			}
 
