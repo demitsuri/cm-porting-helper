@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.lang.reflect.Array;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -47,5 +48,21 @@ public class Utils {
 			return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Analog of java.util.Arrays.copyOf() due to insufficient minimum API level (7 against 9) 
+	 * @param source
+	 * @param newLen
+	 * @return
+	 */
+	public static <T> T[] arrayCopyOf(T[] source, int newLen) {
+		@SuppressWarnings("unchecked")
+		T[] newArr = (T[]) Array.newInstance(source.getClass(), newLen);
+		
+		for(int i = 0; i < Math.min(source.length, newLen); i++)
+			newArr[i] = source[i];
+		
+		return newArr;
 	}
 }

@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -14,20 +15,17 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import com.crittercism.app.Crittercism;
-import com.flurry.android.FlurryAgent;
-import com.litecoding.cmportinghelper.R;
-
-import android.net.Uri;
-import android.os.AsyncTask.Status;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.os.Environment;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
+import android.os.Bundle;
+import android.os.Environment;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
@@ -35,6 +33,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.crittercism.app.Crittercism;
+import com.flurry.android.FlurryAgent;
 
 public class MainActivity extends Activity {
 	public static final String TAG = "cm-porting-helper";
@@ -45,7 +47,7 @@ public class MainActivity extends Activity {
 	private static final String BTN_ACTION_SHARE_MODE = KEY_ROOT + "btnAction.shareMode";
 	private static final String TXT_COLLECTED_DATA = KEY_ROOT + "txtCollectedData.text";
 	
-	private String mAppDir = null;
+	private String mFilesDir = null;
 	
 	protected InfoCollectionTask mCollectionTask = new InfoCollectionTask();
 	protected boolean mIsActionScanMode = true;
@@ -61,8 +63,7 @@ public class MainActivity extends Activity {
         FlurryAgent.onStartSession(this, Consts.FLURRY_ID);
         
         try {
-        	mAppDir = getPackageManager().
-        			getPackageInfo(getPackageName(), 0).applicationInfo.dataDir;
+        	mFilesDir = getApplicationContext().getFilesDir().getAbsolutePath();
         } catch(Exception e) {
         	Crittercism.logHandledException(e);
         }
@@ -153,14 +154,17 @@ public class MainActivity extends Activity {
     	AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 		builder.setTitle(R.string.dialog_share_caption);
 		builder.setItems(R.array.dialog_share_items, new DialogInterface.OnClickListener() {
+			@SuppressWarnings("unchecked")
 			public void onClick(DialogInterface dialog, int which) {
 				switch(which) {
 				case 0: {
-					new ZipTask(ZipTask.MODE_SD).execute(mCollectionTask.getInfoEntries());
+					new ZipTask(MainActivity.this.getApplicationContext(), ZipTask.MODE_SD, mFilesDir).
+						execute(mCollectionTask.getInfoEntries());
 					break;
 				}
 				case 1: {
-					new ZipTask(ZipTask.MODE_EMAIL).execute(mCollectionTask.getInfoEntries());
+					new ZipTask(MainActivity.this.getApplicationContext(), ZipTask.MODE_EMAIL, mFilesDir).
+						execute(mCollectionTask.getInfoEntries());
 					break;
 				}
 				default: {
@@ -176,6 +180,12 @@ public class MainActivity extends Activity {
     private void saveToSD(String srcPath) {
     	//save on SD
 		File dir = null;
+		
+		String state = Environment.getExternalStorageState();
+		if(!Environment.MEDIA_MOUNTED.equals(state)) {
+			Toast.makeText(this, R.string.msg_sd_is_unavailable, Toast.LENGTH_SHORT).show();
+			return;
+		}
 		
 		dir = Environment.getExternalStorageDirectory();
 		if(dir != null && dir.exists() && dir.isDirectory() && dir.canWrite()) {
@@ -225,12 +235,13 @@ public class MainActivity extends Activity {
 	    		builder.toString());
 	    emailIntent.putExtra(Intent.EXTRA_TEXT, emailBody);
 	    
-        Uri u = Uri.fromFile(new File(srcPath));
+	    File srcFile = new File(srcPath);
+        Uri uri = new Uri.Builder().scheme("content").authority(ResultContentProvider.AUTHORITY).path(srcFile.getName()).build();
         
-	    emailIntent.putExtra(Intent.EXTRA_STREAM, u);
+	    emailIntent.putExtra(Intent.EXTRA_STREAM, uri);
 	    
 	    startActivity(Intent.createChooser(emailIntent, 
-	    getResources().getString(R.string.chooser_share_email)));
+	    getResources().getString(R.string.chooser_share_caption)));
 		
     }
     
@@ -329,18 +340,55 @@ public class MainActivity extends Activity {
     	public static final int MODE_SD = 0;
     	public static final int MODE_EMAIL = 1;
     	
-    	private int mMode = MODE_SD;
+    	private final FileFilter FILE_FILTER = new FileFilter() {
+			
+			@Override
+			public boolean accept(File pathname) {
+				//accept files only
+				if(!pathname.isFile())
+					return false;
+				
+				//accept mask is tmp-*.zip
+				if(!pathname.getName().startsWith("tmp-") ||
+					!pathname.getName().endsWith(".zip"))
+					return false;
+				
+				//accept files older than 10min
+				if(pathname.lastModified() > System.currentTimeMillis() - 10* 60 * 1000)
+					return false;
+				
+				return true;
+			}
+		};
     	
-    	public ZipTask(int mode) {
+		private Context mContext = null;
+    	private int mMode = MODE_SD;
+    	private String mFilesDir = null;
+    	
+    	public ZipTask(Context ctx, int mode, String filesDir) {
+    		mContext = ctx;
     		mMode = mode;
+    		mFilesDir = filesDir;
     	}
     	
 		@Override
 		protected String doInBackground(List<InfoEntry>... params) {
 			File file = null;
 			try {
-				file = File.createTempFile("cmph", ".zip");
-				FileOutputStream fos = new FileOutputStream(file);
+				//begin clear old files
+				File filesDir = new File(mFilesDir);
+				File[] oldFiles = filesDir.listFiles(FILE_FILTER);
+				
+				for(File oldFile : oldFiles)
+					oldFile.delete();
+				//end clear old files
+				
+				file = new File(filesDir, "tmp-" + 
+						System.currentTimeMillis() + 
+						"-" + System.nanoTime() + ".zip");
+				
+				FileOutputStream fos = mContext.openFileOutput(file.getName(), 
+						Context.MODE_PRIVATE);
 				ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(fos));
 				byte[] buff = new byte[1024];
 				try {
@@ -384,6 +432,7 @@ public class MainActivity extends Activity {
 			switch (mMode) {
 			case MODE_SD:
 			default: {
+				MainActivity.this.
 				saveToSD(result);
 				break;
 			}

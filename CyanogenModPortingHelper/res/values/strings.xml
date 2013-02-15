@@ -12,10 +12,10 @@
     <string name="dialog_share_caption">Share info with:</string>
     <string-array name="dialog_share_items">
         <item>Save on SD</item>
-        <item>Send by e-mail</item>
+        <item>Send by&#8230;</item>
     </string-array>
     
-    <string name="chooser_share_email">Choose e-mail client app</string>
+    <string name="chooser_share_caption">Send by&#8230;</string>
     
     <string-array name="arr_examine_filepaths">
         <item>/system/build.prop</item>
@@ -30,4 +30,6 @@
     
     <string name="email_subject">CM Porting Helper report</string>
     <string name="email_body_fmt" formatted="false">Generator: %s v%s (code: %d)\nFiles: see attached archive\nExtra data:\n%s</string>
+    
+    <string name="msg_sd_is_unavailable">Can\'t write a file. SD card is unavailable.</string>
 </resources>
