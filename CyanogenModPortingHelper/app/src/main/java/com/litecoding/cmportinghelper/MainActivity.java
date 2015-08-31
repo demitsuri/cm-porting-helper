@@ -1,5 +1,7 @@
 package com.litecoding.cmportinghelper;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -35,9 +37,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.crittercism.app.Crittercism;
-import com.flurry.android.FlurryAgent;
-
 public class MainActivity extends Activity {
 	public static final String TAG = "cm-porting-helper";
 	
@@ -58,14 +57,16 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		Fabric.Builder builder = new Fabric.Builder(this);
+		builder.kits(new Crashlytics()).debuggable(!BuildConfig.DEBUG);
+        Fabric.with(builder.build());
+
         setContentView(R.layout.activity_main);
-        Crittercism.init(getApplicationContext(), Consts.CRITTERCISM_ID);
-        FlurryAgent.onStartSession(this, Consts.FLURRY_ID);
         
         try {
         	mFilesDir = getApplicationContext().getFilesDir().getAbsolutePath();
         } catch(Exception e) {
-        	Crittercism.logHandledException(e);
+        	Crashlytics.logException(e);
         }
         
         Bundle testBundle = savedInstanceState;
@@ -119,7 +120,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
     	super.onPause();
-    	FlurryAgent.onEndSession(this);
     	
     	if(mCollectionTask != null) {
     		if(mCollectionTask.getStatus() == Status.RUNNING) {
@@ -207,7 +207,7 @@ public class MainActivity extends Activity {
     		pInfo = new PackageInfo();
     		pInfo.versionCode = 0;
     		pInfo.versionName = "(unknown)";
-    		Crittercism.logHandledException(e);
+    		Crashlytics.logException(e);
     	}
     	
 		Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
@@ -414,12 +414,12 @@ public class MainActivity extends Activity {
 				        zos.closeEntry();
 				     }
 				 } catch(Exception e) {
-					 Crittercism.logHandledException(e);
+					 Crashlytics.logException(e);
 				 } finally {
 				     zos.close();
 				 }
 			} catch(Exception e) {
-				Crittercism.logHandledException(e);
+				Crashlytics.logException(e);
 				Log.e(MainActivity.TAG, "Oops on zip", e);
 				file = null;
 			}

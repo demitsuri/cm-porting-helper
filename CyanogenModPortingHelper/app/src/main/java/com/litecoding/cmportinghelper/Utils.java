@@ -8,11 +8,11 @@ import java.lang.reflect.Array;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import com.crittercism.app.Crittercism;
-
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
 
 public class Utils {
 	private static final Executor EXECUTOR = Executors.newCachedThreadPool();
@@ -43,7 +43,7 @@ public class Utils {
 			bis.close();
 			bos.close();
 		} catch(Exception e) {
-			Crittercism.logHandledException(e);
+			Crashlytics.logException(e);
 			Log.e(MainActivity.TAG, "Exception while copying file", e);
 			return false;
 		}

@@ -26,10 +26,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
-        <!-- Start of Crittercism.com Code -->
-		<activity android:name="com.crittercism.NotificationActivity" />
-		<!-- End of Crittercism.com Code -->
 		
 		<provider 
 		    android:authorities="com.litecoding.cmportinghelper" 
@@ -38,6 +34,10 @@
 		    android:exported="true" 
 		    android:multiprocess="false">
 		</provider>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="076aa8474b1a3f917d6a708d44dadef4921465dc" />
     </application>
 
 </manifest>
