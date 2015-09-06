@@ -20,11 +20,11 @@ android {
     buildToolsVersion "23.0.0"
 
     defaultConfig {
-        applicationId "cmportinghelper.litecoding.com.cyanogenmodportinghelper"
+        applicationId "com.litecoding.cyanogenmodportinghelper"
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.2.1-dev"
     }
     buildTypes {
         release {
