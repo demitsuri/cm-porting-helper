@@ -1,0 +1,14 @@
+<svg width="84" height="84" xmlns="http://www.w3.org/2000/svg">
+ <metadata id="metadata7">image/svg+xml</metadata>
+
+ <g>
+  <title>background</title>
+  <rect x="-1" y="-1" width="86" height="86" id="canvas_background" fill="none"/>
+ </g>
+ <g>
+  <title>Icon</title>
+  <ellipse ry="37" rx="37" id="svg_2" cy="42" cx="42" stroke-width="5" stroke="#27aae1" fill="none"/>
+  <ellipse fill="none" stroke="#27aae1" stroke-width="5" stroke-linejoin="null" stroke-linecap="null" cx="32" cy="32" id="svg_4" rx="15.14286" ry="15.14286"/>
+  <line fill="none" stroke="#27aae1" stroke-width="5" stroke-linejoin="null" stroke-linecap="null" x1="43.85714" y1="45.42857" x2="62.44834" y2="64.01977" id="svg_5"/>
+ </g>
+</svg>
